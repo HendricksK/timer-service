@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
 
+	databaseconnector "github.com/HendricksK/timer-service/database-connector"
+	timer "github.com/HendricksK/timer-service/timer"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,7 +20,7 @@ func setUpRouter() *gin.Engine {
 
 	router.GET("/", func(c *gin.Context) {
 		dateTime := time.Now()
-		c.String(http.StatusOK, dateTime.String())
+		c.String(http.StatusOK, fmt.Sprintf("%v\n%v\n", dateTime.String(), "https://www.youtube.com/watch?v=HTFmOOwhdd4"))
 	})
 
 	return router
@@ -32,5 +35,10 @@ func main() {
 	} else {
 		router.Run("0.0.0.0:5001")
 	}
+}
 
+// https://tutorialedge.net/golang/the-go-init-function/
+func init() {
+	fmt.Println(databaseconnector.Init())
+	fmt.Println(timer.Init())
 }
