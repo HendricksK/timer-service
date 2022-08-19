@@ -28,23 +28,23 @@ func setUpRouter() *gin.Engine {
 		c.IndentedJSON(http.StatusOK, timer.Read())
 	})
 
-	router.GET("/timer:ref", func(c *gin.Context) {
+	router.GET("/timer/:ref", func(c *gin.Context) {
 		ref := c.Param("ref")
 		fmt.Println(ref)
 		c.IndentedJSON(http.StatusOK, timer.ReadById(ref))
 	})
 
-	router.POST("/timer/create", func(c *gin.Context) {
+	router.POST("/timer", func(c *gin.Context) {
 		c.IndentedJSON(http.StatusOK, timer.Create(c))
 	})
 
-	router.PATCH("/timer/update:ref", func(c *gin.Context) {
+	router.PATCH("/timer/:ref", func(c *gin.Context) {
 		ref := c.Param("ref")
 		fmt.Println(ref)
 		c.IndentedJSON(http.StatusOK, timer.Update(ref, c))
 	})
 
-	router.DELETE("/timer/delete:ref", func(c *gin.Context) {
+	router.DELETE("/timer/:ref", func(c *gin.Context) {
 		ref := c.Param("ref")
 		fmt.Println(ref)
 		c.IndentedJSON(http.StatusOK, timer.Delete(ref))
