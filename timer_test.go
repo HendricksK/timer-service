@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	timer "github.com/HendricksK/timer-service/timer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,6 +30,7 @@ func TestTimers(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+
 }
 
 func TestTimersRead(t *testing.T) {
@@ -39,6 +42,7 @@ func TestTimersRead(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+
 }
 
 func TestTimersCreate(t *testing.T) {
@@ -50,6 +54,7 @@ func TestTimersCreate(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+
 }
 
 func TestTimersUpdate(t *testing.T) {
@@ -61,6 +66,7 @@ func TestTimersUpdate(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+
 }
 
 func TestTimersDelete(t *testing.T) {
@@ -72,4 +78,20 @@ func TestTimersDelete(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+
+}
+
+func TestTimerCrud(t *testing.T) {
+	fmt.Println()
+
+	fmt.Println("Testing CRUD against array")
+	fmt.Println("TestRead")
+	assert.NotNil(t, timer.TestRead())
+	fmt.Println("TestReadById")
+	assert.NotNil(t, timer.TestReadById("wqdwqdwd878736gefduh"))
+	fmt.Println("TestCreate")
+	assert.NotNil(t, timer.TestCreate(timer.GetTestTimer()))
+	// assert.NotNil(t, timer.TestUpdate("wqdwqdwd878736gefduh"))
+	fmt.Println("TestDelete")
+	assert.NotNil(t, timer.TestDelete("wqdwqdwd878736gefduh"))
 }
