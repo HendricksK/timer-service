@@ -10,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var port string
+var env string
+
 func setUpRouter() *gin.Engine {
 	router := gin.Default()
 
@@ -55,7 +58,11 @@ func setUpRouter() *gin.Engine {
 
 func main() {
 	router := setUpRouter()
-	port := os.Getenv("PORT")
+	// port := os.Getenv("PORT")
+	// env := os.Getenv("ENV")
+
+	fmt.Println(env)
+	fmt.Println(port)
 
 	if port != "" {
 		router.Run("0.0.0.0:" + port)
@@ -66,5 +73,7 @@ func main() {
 
 // https://tutorialedge.net/golang/the-go-init-function/
 func init() {
+	port = os.Getenv("PORT")
+	env = os.Getenv("ENV")
 	fmt.Println(timer.Init())
 }
