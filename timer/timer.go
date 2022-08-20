@@ -2,13 +2,15 @@ package timer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
+	database "github.com/HendricksK/timer-service/database-connector"
 	"github.com/gin-gonic/gin"
 )
 
-type timer struct {
+type Timer struct {
 	Id            uint64 `json:"id"`
 	Ref           string `json:"ref"`
 	ProjectRef    string `json:"project_ref"`
@@ -24,7 +26,7 @@ type timer struct {
 
 var env string
 
-var timers = []timer{
+var timers = []Timer{
 	{
 		Id:         1,
 		Ref:        "AQFs1ggyP8sXqyfghi9g",
@@ -48,17 +50,42 @@ func Init() string {
 }
 
 // We set mockdata here
-func GetTestTimer() []timer {
+func GetTestTimer() []Timer {
 	return timers
 }
 
-func Read() []timer {
-	return timers
+func Read() []Timer {
+	var db = database.GetPostgresDatabaseHandler()
+	var data []Timer
+
+	rows, err := db.Query("SELECT * FROM timer")
+
+	if err != nil {
+		log.Println(err)
+		fmt.Println(err)
+		return []Timer{}
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var timer Timer
+		err = rows.Scan(&timer.Id, &timer.Ref)
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Println(timer)
+		data = append(data, timer)
+	}
+
+	database.CloseDBConnection(db)
+
+	return data
 }
 
 // https://github.com/golang/go/wiki/SliceTricks
-func ReadById(ref string) timer {
-	var data timer
+func ReadById(ref string) Timer {
+	var data Timer
 
 	for _, timer := range timers {
 		if timer.Ref == ref {
@@ -69,8 +96,8 @@ func ReadById(ref string) timer {
 	return data
 }
 
-func Create(c *gin.Context) []timer {
-	var data timer
+func Create(c *gin.Context) []Timer {
+	var data Timer
 
 	// data.Id = timers[len(timers)-1].Id + 1
 	// Id will be set on insert
@@ -82,25 +109,25 @@ func Create(c *gin.Context) []timer {
 	return timers
 }
 
-func Update(ref string, c *gin.Context) []timer {
+func Update(ref string, c *gin.Context) []Timer {
 
 	return timers
 
 }
 
-func Delete(ref string) []timer {
+func Delete(ref string) []Timer {
 
 	return timers
 }
 
 // Tests
-func TestRead() []timer {
+func TestRead() []Timer {
 	return timers
 }
 
 // https://github.com/golang/go/wiki/SliceTricks
-func TestReadById(ref string) timer {
-	var data timer
+func TestReadById(ref string) Timer {
+	var data Timer
 
 	for _, timer := range timers {
 		if timer.Ref == ref {
@@ -111,16 +138,16 @@ func TestReadById(ref string) timer {
 	return data
 }
 
-func TestCreate(newTimers []timer) []timer {
+func TestCreate(newTimers []Timer) []Timer {
 
 	timers = append(timers, newTimers...)
 	return timers
 }
 
-func TestUpdate(ref string, c *gin.Context) []timer {
+func TestUpdate(ref string, c *gin.Context) []Timer {
 
-	var dataUpdate timer
-	var data timer
+	var dataUpdate Timer
+	var data Timer
 
 	dataUpdate.ModifiedAt = time.Now().String()
 	dataUpdate.Notes = "Hello there"
@@ -139,7 +166,7 @@ func TestUpdate(ref string, c *gin.Context) []timer {
 
 }
 
-func TestDelete(ref string) []timer {
+func TestDelete(ref string) []Timer {
 
 	return timers
 }

@@ -1,0 +1,9 @@
+CREATE TABLE public.timer (
+	id serial4 NOT NULL,
+	"ref" varchar NOT NULL DEFAULT gen_random_uuid(),
+	CONSTRAINT timer_pk PRIMARY KEY (id),
+	CONSTRAINT timer_un UNIQUE (ref)
+);
+CREATE INDEX timer_ref_idx ON public.timer USING btree (ref);
+
+// This is a dumb table show working for tests, will pad out later 
