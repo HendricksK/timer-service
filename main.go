@@ -42,7 +42,7 @@ func setUpRouter() *gin.Engine {
 		c.IndentedJSON(http.StatusOK, timer.Create(c))
 	})
 
-	router.PATCH("/timer/:ref", func(c *gin.Context) {
+	router.PUT("/timer/:ref", func(c *gin.Context) {
 		ref := c.Param("ref")
 		fmt.Println(ref)
 		c.IndentedJSON(http.StatusOK, timer.Update(ref, c))

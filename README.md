@@ -4,3 +4,5 @@ you're a wizard harry
 ## run `go install github.com/cosmtrek/air@latest`
 ## run source `source ./setdevelopment.sh`
 ## run `air`
+
+https://documenter.getpostman.com/view/11707400/VUqpscSc

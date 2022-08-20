@@ -11,35 +11,36 @@ import (
 )
 
 type Timer struct {
-	Id            uint64 `json:"id"`
-	Ref           string `json:"ref"`
-	ProjectRef    string `json:"project_ref"`
-	PreviousValue string `json:"previous_value"`
-	CurrentValue  string `json:"current_value"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	Notes         string `json:"notes"`
-	Created       string `json:"created"`
-	ModifiedAt    string `json:"modified_at"`
-	Deleted       bool   `json:"deleted"`
+	Id             uint64 `json:"id"`
+	Ref            string `json:"ref"`
+	Project_ref    string `json:"project_ref"`
+	Previous_value string `json:"previous_value"`
+	Current_value  string `json:"current_value"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	Notes          string `json:"notes"`
+	Created        string `json:"created"`
+	Modified_at    string `json:"modified_at"`
+	Deleted        int    `json:"deleted"`
+	Timezone       string `json:"timezone"`
 }
 
 var env string
 
 var timers = []Timer{
 	{
-		Id:         1,
-		Ref:        "AQFs1ggyP8sXqyfghi9g",
-		Created:    time.Now().String(),
-		ModifiedAt: "",
-		Deleted:    false,
+		Id:          1,
+		Ref:         "AQFs1ggyP8sXqyfghi9g",
+		Created:     time.Now().String(),
+		Modified_at: "",
+		Deleted:     0,
 	},
 	{
-		Id:         2,
-		Ref:        "wqdwqdwd878736gefduh",
-		Created:    time.Now().String(),
-		ModifiedAt: "",
-		Deleted:    false,
+		Id:          2,
+		Ref:         "wqdwqdwd878736gefduh",
+		Created:     time.Now().String(),
+		Modified_at: "",
+		Deleted:     0,
 	},
 }
 
@@ -97,9 +98,32 @@ func ReadByRef(ref string) Timer {
 	var db = database.GetPostgresDatabaseHandler()
 	var timer Timer
 
+	// Id             uint64 `json:"id"`
+	// Ref            string `json:"ref"`
+	// Project_ref    string `json:"project_ref"`
+	// Previous_value string `json:"previous_value"`
+	// Current_value  string `json:"current_value"`
+	// Name           string `json:"name"`
+	// Description    string `json:"description"`
+	// Notes          string `json:"notes"`
+	// Created        string `json:"created"`
+	// Modified_at    string `json:"modified_at"`
+	// Deleted        int    `json:"deleted"`
+	// Timezone       string `json:"timezone"`
+
 	err := db.QueryRow("SELECT * FROM timer WHERE ref = $1", ref).Scan(
 		&timer.Id,
 		&timer.Ref,
+		&timer.Project_ref,
+		&timer.Previous_value,
+		&timer.Current_value,
+		&timer.Name,
+		&timer.Description,
+		&timer.Notes,
+		&timer.Created,
+		&timer.Modified_at,
+		&timer.Deleted,
+		&timer.Timezone,
 	)
 
 	if err != nil {
@@ -113,17 +137,81 @@ func ReadByRef(ref string) Timer {
 	return timer
 }
 
-func Create(c *gin.Context) []Timer {
+func Create(c *gin.Context) Timer {
+	var db = database.GetPostgresDatabaseHandler()
+	var timer Timer
 	var data Timer
+	var id uint64
 
-	// data.Id = timers[len(timers)-1].Id + 1
-	// Id will be set on insert
-	data.Ref = c.PostForm("ref")
-	data.Created = time.Now().String()
-	data.ModifiedAt = ""
-	data.Deleted = false
+	c.BindJSON(&data)
 
-	return timers
+	sqlStatement := `
+		INSERT INTO timer (
+			project_ref, 
+			name, 
+			description, 
+			notes,
+			timezone
+		)
+		VALUES (
+			$1, 
+			$2, 
+			$3, 
+			$4,
+			$5
+		)
+		RETURNING "id"`
+
+	preparedQuery, err := db.Prepare(sqlStatement)
+
+	if err != nil {
+		log.Println(err)
+		database.CloseDBConnection(db)
+	}
+
+	defer preparedQuery.Close()
+
+	errInsert := preparedQuery.QueryRow(
+		data.Project_ref,
+		data.Name,
+		data.Description,
+		data.Notes,
+		data.Timezone,
+	).Scan(&id)
+
+	fmt.Println(id)
+
+	if errInsert != nil {
+		log.Println(err)
+		database.CloseDBConnection(db)
+		return timer
+	}
+
+	getErr := db.QueryRow("SELECT * FROM timer WHERE id = $1", id).Scan(
+		&timer.Id,
+		&timer.Ref,
+		&timer.Project_ref,
+		&timer.Previous_value,
+		&timer.Current_value,
+		&timer.Name,
+		&timer.Description,
+		&timer.Notes,
+		&timer.Created,
+		&timer.Modified_at,
+		&timer.Deleted,
+		&timer.Timezone,
+	)
+
+	if getErr != nil {
+		log.Println(err)
+		fmt.Println(err)
+		database.CloseDBConnection(db)
+		return timer
+	}
+
+	database.CloseDBConnection(db)
+
+	return timer
 }
 
 func Update(ref string, c *gin.Context) []Timer {
@@ -166,7 +254,7 @@ func TestUpdate(ref string, c *gin.Context) []Timer {
 	var dataUpdate Timer
 	var data Timer
 
-	dataUpdate.ModifiedAt = time.Now().String()
+	dataUpdate.Modified_at = time.Now().String()
 	dataUpdate.Notes = "Hello there"
 	// https://forum.golangbridge.org/t/update-values-in-a-struct-through-a-method/19589
 	// https://developer20.com/pointer-and-value-semantics-in-go/
