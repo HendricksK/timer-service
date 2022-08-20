@@ -54,11 +54,13 @@ func GetTestTimer() []Timer {
 	return timers
 }
 
-func Read() []Timer {
+func Read(limit string) []Timer {
 	var db = database.GetPostgresDatabaseHandler()
 	var data []Timer
 
-	rows, err := db.Query("SELECT * FROM timer")
+	// https://go.dev/doc/database/sql-injection
+	// rows, err := db.Query("SELECT * FROM user WHERE id = ?", id)
+	rows, err := db.Query("SELECT * FROM timer LIMIT = ? ORDER by DESC", limit)
 
 	if err != nil {
 		log.Println(err)

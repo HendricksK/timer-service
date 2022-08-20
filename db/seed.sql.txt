@@ -1,0 +1,30 @@
+INSERT INTO public.timer
+(id, "ref")
+VALUES(1, '54b686fa-b0d4-4dfa-a312-e90d811c25bd');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(2, '5bdbe030-4a92-4f77-991b-dbd392185cc5');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(3, 'e706a475-bba3-4834-9912-947b85125560');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(4, '9d5c2e39-4630-4a44-aa24-7616bd36fb62');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(5, 'cbf2fff7-5ba1-4a28-af38-c9588ed7bba4');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(6, '351b7125-c1b8-452a-8037-f7ff5f7f0a99');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(7, '2a29772d-e986-4041-87bc-845f56bfe78e');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(8, '07b96ccf-7213-49ba-b52a-857a8f6a23d7');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(9, '90e7c4b6-69c5-4894-a857-191044b4f840');
+INSERT INTO public.timer
+(id, "ref")
+VALUES(10, 'b413bd2f-b85e-4a8d-9f26-db9d9fed4ff3');

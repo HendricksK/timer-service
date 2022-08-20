@@ -27,8 +27,9 @@ func setUpRouter() *gin.Engine {
 
 	// Timer CRUD
 	// This is a baseline test URI
-	router.GET("/timers", func(c *gin.Context) {
-		c.IndentedJSON(http.StatusOK, timer.Read())
+	router.GET("/timers/:limit", func(c *gin.Context) {
+		limit := c.Param("limit")
+		c.IndentedJSON(http.StatusOK, timer.Read(limit))
 	})
 
 	router.GET("/timer/:ref", func(c *gin.Context) {

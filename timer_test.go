@@ -25,11 +25,14 @@ func TestTimers(t *testing.T) {
 	router := setUpRouter()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/timers", nil)
+	req, _ := http.NewRequest("GET", "/timers/50", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
 	assert.NotNil(t, w.Body.String())
+	// Need to set as default value
+	// Need to build a seed script
+	assert.Contains(t, w.Body.String(), "54b686fa-b0d4-4dfa-a312-e90d811c25bd")
 
 }
 
