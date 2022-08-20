@@ -225,8 +225,12 @@ func Delete(ref string) bool {
 
 	if err == nil {
 
-		_, err := res.RowsAffected()
+		count, err := res.RowsAffected()
 		if err != nil {
+			database.CloseDBConnection(db)
+			return false
+		}
+		if count == 0 {
 			database.CloseDBConnection(db)
 			return false
 		}
