@@ -217,12 +217,25 @@ func Create(c *gin.Context) Timer {
 func Update(ref string, c *gin.Context) []Timer {
 
 	return timers
-
 }
 
-func Delete(ref string) []Timer {
+func Delete(ref string) bool {
+	var db = database.GetPostgresDatabaseHandler()
+	res, err := db.Exec("DELETE FROM timer WHERE ref = $1", ref)
 
-	return timers
+	if err == nil {
+
+		_, err := res.RowsAffected()
+		if err != nil {
+			database.CloseDBConnection(db)
+			return false
+		}
+
+	}
+
+	database.CloseDBConnection(db)
+
+	return true
 }
 
 // Tests

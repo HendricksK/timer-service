@@ -64,7 +64,7 @@ func TestTimersUpdate(t *testing.T) {
 	router := setUpRouter()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("PATCH", "/timer/test", nil)
+	req, _ := http.NewRequest("PUT", "/timer/test", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
