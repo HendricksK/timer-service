@@ -44,6 +44,8 @@ var timers = []Timer{
 }
 
 func Init() string {
+	// At some point I would like to implement an interface
+	// that will run tests for local development based on this ENV
 	env = os.Getenv("ENV")
 	fmt.Println(env)
 	return "yes"
@@ -60,11 +62,12 @@ func Read(limit string) []Timer {
 
 	// https://go.dev/doc/database/sql-injection
 	// rows, err := db.Query("SELECT * FROM user WHERE id = ?", id)
-	rows, err := db.Query("SELECT * FROM timer LIMIT = ? ORDER by DESC", limit)
+	rows, err := db.Query("SELECT * FROM timer ORDER BY id DESC LIMIT $1", limit)
 
 	if err != nil {
 		log.Println(err)
 		fmt.Println(err)
+		database.CloseDBConnection(db)
 		return []Timer{}
 	}
 
@@ -72,7 +75,10 @@ func Read(limit string) []Timer {
 
 	for rows.Next() {
 		var timer Timer
-		err = rows.Scan(&timer.Id, &timer.Ref)
+		err = rows.Scan(
+			&timer.Id,
+			&timer.Ref,
+		)
 		if err != nil {
 			log.Println(err)
 		}
@@ -86,16 +92,25 @@ func Read(limit string) []Timer {
 }
 
 // https://github.com/golang/go/wiki/SliceTricks
-func ReadById(ref string) Timer {
-	var data Timer
+func ReadByRef(ref string) Timer {
 
-	for _, timer := range timers {
-		if timer.Ref == ref {
-			data = timer
-		}
+	var db = database.GetPostgresDatabaseHandler()
+	var timer Timer
+
+	err := db.QueryRow("SELECT * FROM timer WHERE ref = $1", ref).Scan(
+		&timer.Id,
+		&timer.Ref,
+	)
+
+	if err != nil {
+		log.Println(err)
+		fmt.Println(err)
+		database.CloseDBConnection(db)
+		return timer
 	}
 
-	return data
+	database.CloseDBConnection(db)
+	return timer
 }
 
 func Create(c *gin.Context) []Timer {

@@ -35,7 +35,7 @@ func setUpRouter() *gin.Engine {
 	router.GET("/timer/:ref", func(c *gin.Context) {
 		ref := c.Param("ref")
 		fmt.Println(ref)
-		c.IndentedJSON(http.StatusOK, timer.ReadById(ref))
+		c.IndentedJSON(http.StatusOK, timer.ReadByRef(ref))
 	})
 
 	router.POST("/timer", func(c *gin.Context) {
