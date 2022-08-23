@@ -14,6 +14,7 @@ type Timer struct {
 	Id             uint64 `json:"id"`
 	Ref            string `json:"ref"`
 	Project_ref    string `json:"project_ref"`
+	User_ref       string `json:"user_ref"`
 	Previous_value string `json:"previous_value"`
 	Current_value  string `json:"current_value"`
 	Name           string `json:"name"`
@@ -115,6 +116,7 @@ func ReadByRef(ref string) Timer {
 		&timer.Id,
 		&timer.Ref,
 		&timer.Project_ref,
+		&timer.User_ref,
 		&timer.Previous_value,
 		&timer.Current_value,
 		&timer.Name,

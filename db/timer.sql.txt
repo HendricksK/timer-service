@@ -32,3 +32,30 @@ CREATE INDEX timer_project_ref_idx ON public.timer USING btree (project_ref);
 CREATE INDEX timer_ref_idx ON public.timer USING btree (ref);
 
 // This is a dumb table show working for tests, will pad out later 
+
+-- public.timer definition
+
+-- Drop table
+
+-- DROP TABLE public.timer;
+
+CREATE TABLE public.timer (
+	id serial4 NOT NULL,
+	"ref" varchar NOT NULL DEFAULT gen_random_uuid(),
+	project_ref varchar NULL,
+	user_ref varchar NOT NULL DEFAULT gen_random_uuid(),
+	previous_value timestamp NOT NULL DEFAULT now(),
+	current_value timestamp NOT NULL DEFAULT now(),
+	"name" varchar NULL,
+	description varchar NULL,
+	notes text NULL,
+	created timestamp NOT NULL DEFAULT now(),
+	modified_at timestamp NULL,
+	deleted int4 NOT NULL DEFAULT 0,
+	timezone varchar NULL,
+	CONSTRAINT timer_pk PRIMARY KEY (id),
+	CONSTRAINT timer_un UNIQUE (ref)
+);
+CREATE INDEX timer_project_ref_idx ON public.timer USING btree (project_ref);
+CREATE INDEX timer_ref_idx ON public.timer USING btree (ref);
+CREATE INDEX timer_user_ref_idx ON public.timer (user_ref);
