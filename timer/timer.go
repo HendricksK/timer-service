@@ -4,26 +4,36 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
 	database "github.com/HendricksK/timer-service/database-connector"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/exp/slices"
 )
+
+// "project_ref": "qwerty12123",
+// "name": "qwerty",
+// "description": "qwerty",
+// "notes": "qwerty",
+// "timezone": "UTC"
 
 type Timer struct {
 	Id             uint64 `json:"id"`
 	Ref            string `json:"ref"`
-	Project_ref    string `json:"project_ref"`
-	User_ref       string `json:"user_ref"`
-	Previous_value string `json:"previous_value"`
-	Current_value  string `json:"current_value"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	Notes          string `json:"notes"`
-	Created        string `json:"created"`
-	Modified_at    string `json:"modified_at"`
-	Deleted        int    `json:"deleted"`
-	Timezone       string `json:"timezone"`
+	Project_ref    string `json:"project_ref,omitempty"`
+	User_ref       string `json:"user_ref,omitempty"`
+	Previous_value string `json:"previous_value,omitempty"`
+	Current_value  string `json:"current_value,omitempty"`
+	Name           string `json:"name,omitempty"`
+	Description    string `json:"description,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	Created        string `json:"created,omitempty"`
+	Modified_at    string `json:"modified_at,omitempty"`
+	Deleted        int    `json:"deleted,omitempty"`
+	Timezone       string `json:"timezone,omitempty"`
 }
 
 var env string
@@ -148,15 +158,7 @@ func Create(c *gin.Context) Timer {
 	c.BindJSON(&data)
 
 	sqlStatement := `
-		INSERT INTO timer (
-			project_ref, 
-			name, 
-			description, 
-			notes,
-			timezone
-		)
-		VALUES (
-			$1, 
+		INSERT INTO timer (data
 			$2, 
 			$3, 
 			$4,
@@ -193,6 +195,7 @@ func Create(c *gin.Context) Timer {
 		&timer.Id,
 		&timer.Ref,
 		&timer.Project_ref,
+		&timer.User_ref,
 		&timer.Previous_value,
 		&timer.Current_value,
 		&timer.Name,
@@ -206,7 +209,6 @@ func Create(c *gin.Context) Timer {
 
 	if getErr != nil {
 		log.Println(err)
-		fmt.Println(err)
 		database.CloseDBConnection(db)
 		return timer
 	}
@@ -216,9 +218,117 @@ func Create(c *gin.Context) Timer {
 	return timer
 }
 
-func Update(ref string, c *gin.Context) []Timer {
+func Update(c *gin.Context) Timer {
 
-	return timers
+	var db = database.GetPostgresDatabaseHandler()
+	var update, timer Timer
+
+	// Id             uint64 `json:"id"`
+	// Ref            string `json:"ref"`
+	// Project_ref    string `json:"project_ref"`
+	// Previous_value string `json:"previous_value"`
+	// Current_value  string `json:"current_value"`
+	// Name           string `json:"name"`
+	// Description    string `json:"description"`
+	// Notes          string `json:"notes"`
+	// Created        string `json:"created"`
+	// Modified_at    string `json:"modified_at"`
+	// Deleted        int    `json:"deleted"`
+	// Timezone       string `json:"timezone"`
+
+	// var project_ref, current_value, name, description, notes, timezone, user_ref string
+	// var deleted int
+
+	// Need to figure out how to update only the fields that come via c.BindJSON
+
+	c.BindJSON(&update)
+
+	if update.Ref == "" {
+		fmt.Println("for now I am just chilling" + update.Ref)
+		return timer
+	}
+
+	row, err := db.Query("SELECT count(id) FROM timer WHERE ref = $1", update.Ref)
+
+	if row == nil {
+		database.CloseDBConnection(db)
+		return timer
+	}
+
+	if err != nil {
+		log.Println(err)
+		database.CloseDBConnection(db)
+		return timer
+	}
+
+	// iterate over timer struct to create prepared update, do not want to update fields that we do not have
+	// Very helpful in my persuit https://www.golangprograms.com/how-to-get-struct-variable-information-using-reflect-package.html
+	// Can build all of this into a function in the database package
+	updateReflection := reflect.ValueOf(&update).Elem()
+
+	var fieldsBeingUpdated string
+	var valuesBeingUpdated string
+	valuesBeingUpdatedCounter := 0
+	noUpdatesAllowed := []string{"Id", "Ref"}
+
+	for i := 0; i < updateReflection.NumField(); i++ {
+		if updateReflection.Type().Field(i).Name != "" && !slices.Contains(noUpdatesAllowed, updateReflection.Type().Field(i).Name) && updateReflection.Field(i).Interface() != "" {
+			fieldsBeingUpdated += strings.ToLower(updateReflection.Type().Field(i).Name) + ","
+			valuesBeingUpdatedCounter++
+			valuesBeingUpdated += fmt.Sprintf("$%v,", strconv.Itoa(valuesBeingUpdatedCounter))
+		}
+	}
+
+	fieldsBeingUpdated = strings.TrimRight(fieldsBeingUpdated, ",")
+	valuesBeingUpdated = strings.TrimRight(valuesBeingUpdated, ",")
+
+	sqlStatement := `
+		INSERT INTO timer (
+			` + fieldsBeingUpdated + `
+		)
+		VALUES (` + valuesBeingUpdated + `)`
+
+	// Need to get all non empty fields and then drop them in preparedQuery
+	// https://stackoverflow.com/questions/49965387/use-slice-reflect-type-as-map-key
+	preparedQuery, err := db.Prepare(sqlStatement)
+
+	defer preparedQuery.Close()
+
+	errUpdate := preparedQuery.QueryRow(
+		update,
+	)
+
+	fmt.Println(errUpdate)
+
+	// Can build all of this into a function in the database package
+
+	// preparedQuery, err := db.Prepare(sqlStatement)
+
+	return timer
+
+	// updateErr := db.QueryRow("SELECT * FROM timer WHERE id = $1", id).Scan(
+	// 	&update.Id,
+	// 	&update.Ref,
+	// 	&update.Project_ref,
+	// 	&update.Previous_value,
+	// 	&update.Current_value,
+	// 	&update.Name,
+	// 	&update.Description,
+	// 	&update.Notes,
+	// 	&update.Created,
+	// 	&update.Modified_at,
+	// 	&update.Deleted,
+	// 	&update.Timezone,
+	// )
+
+	if err != nil {
+		log.Println(err)
+		fmt.Println(err)
+		database.CloseDBConnection(db)
+		return timer
+	}
+
+	return timer
 }
 
 func Delete(ref string) bool {
