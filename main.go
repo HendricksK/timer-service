@@ -6,16 +6,18 @@ import (
 	"os"
 	"time"
 
-	databaseconnector "github.com/HendricksK/timer-service/database-connector"
 	timer "github.com/HendricksK/timer-service/timer"
 	"github.com/gin-gonic/gin"
 )
+
+var port string
+var env string
 
 func setUpRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	router.GET("/", func(c *gin.Context) {
@@ -23,12 +25,41 @@ func setUpRouter() *gin.Engine {
 		c.String(http.StatusOK, fmt.Sprintf("%v\n%v\n", dateTime.String(), "https://www.youtube.com/watch?v=HTFmOOwhdd4"))
 	})
 
+	// Timer CRUD
+	// This is a baseline test URI
+	router.GET("/timers/:limit", func(c *gin.Context) {
+		limit := c.Param("limit")
+		c.IndentedJSON(http.StatusOK, timer.Read(limit))
+	})
+
+	router.GET("/timer/:ref", func(c *gin.Context) {
+		ref := c.Param("ref")
+		c.IndentedJSON(http.StatusOK, timer.ReadByRef(ref))
+	})
+
+	router.POST("/timer", func(c *gin.Context) {
+		c.IndentedJSON(http.StatusOK, timer.Create(c))
+	})
+
+	router.PUT("/timer", func(c *gin.Context) {
+		c.IndentedJSON(http.StatusOK, timer.Update(c))
+	})
+
+	router.DELETE("/timer/:ref", func(c *gin.Context) {
+		ref := c.Param("ref")
+		c.IndentedJSON(http.StatusOK, timer.Delete(ref))
+	})
+
 	return router
 }
 
 func main() {
 	router := setUpRouter()
-	port := os.Getenv("PORT")
+	// port := os.Getenv("PORT")
+	// env := os.Getenv("ENV")
+
+	fmt.Println(env)
+	fmt.Println(port)
 
 	if port != "" {
 		router.Run("0.0.0.0:" + port)
@@ -39,6 +70,7 @@ func main() {
 
 // https://tutorialedge.net/golang/the-go-init-function/
 func init() {
-	fmt.Println(databaseconnector.Init())
+	port = os.Getenv("PORT")
+	env = os.Getenv("ENV")
 	fmt.Println(timer.Init())
 }
