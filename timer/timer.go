@@ -159,11 +159,21 @@ func Create(c *gin.Context) Timer {
 	c.BindJSON(&data)
 
 	sqlStatement := `
-		INSERT INTO timer (data
+		INSERT INTO timer (
+			project_ref,
+			user_ref, 
+			name, 
+			description, 
+			notes,
+			timezone
+		)
+		VALUES (
+			$1, 
 			$2, 
 			$3, 
 			$4,
-			$5
+			$5,
+			$6
 		)
 		RETURNING "id"`
 
@@ -178,6 +188,7 @@ func Create(c *gin.Context) Timer {
 
 	errInsert := preparedQuery.QueryRow(
 		data.Project_ref,
+		data.User_ref,
 		data.Name,
 		data.Description,
 		data.Notes,
@@ -192,7 +203,7 @@ func Create(c *gin.Context) Timer {
 		return timer
 	}
 
-	getErr := db.QueryRow("SELECT * FROM timer WHERE id = $1", id).Scan(
+	getErr := db.QueryRow("SELECT * FROM "+tableName+" WHERE id = $1", id).Scan(
 		&timer.Id,
 		&timer.Ref,
 		&timer.Project_ref,
