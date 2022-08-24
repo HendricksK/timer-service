@@ -10,6 +10,7 @@ import (
 
 	database "github.com/HendricksK/timer-service/database-connector"
 	"github.com/gin-gonic/gin"
+	sanitize "github.com/mrz1836/go-sanitize"
 	"golang.org/x/exp/slices"
 )
 
@@ -244,22 +245,17 @@ func Update(c *gin.Context) Timer {
 	c.BindJSON(&update)
 
 	if update.Ref == "" {
-		fmt.Println("for now I am just chilling" + update.Ref)
 		return timer
 	}
 
-	row, err := db.Query("SELECT count(id) FROM timer WHERE ref = $1", update.Ref)
+	row := db.QueryRow("SELECT id FROM "+tableName+" WHERE ref = $1", update.Ref)
 
 	if row == nil {
 		database.CloseDBConnection(db)
 		return timer
 	}
 
-	if err != nil {
-		log.Println(err)
-		database.CloseDBConnection(db)
-		return timer
-	}
+	row.Scan(&update.Id)
 
 	// iterate over timer struct to create prepared update, do not want to update fields that we do not have
 	// Very helpful in my persuit https://www.golangprograms.com/how-to-get-struct-variable-information-using-reflect-package.html
@@ -267,83 +263,46 @@ func Update(c *gin.Context) Timer {
 	updateReflection := reflect.ValueOf(&update).Elem()
 
 	var fieldsBeingUpdated string
-	// var valuesBeingUpdated string
-	// valuesBeingUpdatedCounter := 0
 	noUpdatesAllowed := []string{"Id", "Ref"}
-
 	for i := 0; i < updateReflection.NumField(); i++ {
 
 		if updateReflection.Type().Field(i).Name != "" && !slices.Contains(noUpdatesAllowed, updateReflection.Type().Field(i).Name) && updateReflection.Field(i).Interface() != "" {
-			// valuesBeingUpdatedCounter++
 			// https://yourbasic.org/golang/fmt-printf-reference-cheat-sheet/
 			// want to pass the value type, and then parse in the actual value
 			// Will need to look into this to ensure we cannot SQL inject.
 			// What we can do is rather build out an array of no type (hopefully and add values to that, only the values we want to update)
-
 			if strings.Contains(updateReflection.Type().Field(i).Type.String(), "int") { // integer
-				fieldsBeingUpdated += fmt.Sprintf("%v = %v,", strings.ToLower(updateReflection.Type().Field(i).Name), updateReflection.Field(i).Interface())
+				fieldsBeingUpdated += fmt.Sprintf("%v = %v,", strings.ToLower(updateReflection.Type().Field(i).Name), updateReflection.Field(i).Int())
 			}
 
 			if strings.Contains(updateReflection.Type().Field(i).Type.String(), "string") { // string
-				fieldsBeingUpdated += fmt.Sprintf("%v = '%s',", strings.ToLower(updateReflection.Type().Field(i).Name), updateReflection.Field(i).Interface())
+				fieldsBeingUpdated += fmt.Sprintf("%v = '%s',", strings.ToLower(updateReflection.Type().Field(i).Name), sanitize.XSS(updateReflection.Field(i).String()))
 			}
 		}
 	}
 
 	fieldsBeingUpdated = strings.TrimRight(fieldsBeingUpdated, ",")
-	// valuesBeingUpdated = strings.TrimRight(valuesBeingUpdated, ",")
 
 	sqlStatement := `
 		UPDATE ` + tableName + `
 		SET ` + fieldsBeingUpdated + `
 		WHERE ref = $1`
 
-	// fmt.Println(sqlStatement)
-	// fmt.Println(valuesBeingUpdated)
-
 	// Need to get all non empty fields and then drop them in preparedQuery
 	// https://stackoverflow.com/questions/49965387/use-slice-reflect-type-as-map-key
-	updateErr, updateResult := db.Query(sqlStatement, update.Ref)
+	updateResult, updateErr := db.Exec(sqlStatement, update.Ref)
+	// updateResult, updateErr := db.Query(sqlStatement, update.Ref)
 
-	fmt.Println(updateErr)
-	fmt.Println(updateResult)
-	// defer preparedQuery.Close()
+	fmt.Println(updateResult.RowsAffected())
 
-	// errUpdate := preparedQuery.QueryRow(
-	// 	update,
-	// )
-
-	// fmt.Println(errUpdate)
-
-	// Can build all of this into a function in the database package
-
-	// preparedQuery, err := db.Prepare(sqlStatement)
-
-	return timer
-
-	// updateErr := db.QueryRow("SELECT * FROM timer WHERE id = $1", id).Scan(
-	// 	&update.Id,
-	// 	&update.Ref,
-	// 	&update.Project_ref,
-	// 	&update.Previous_value,
-	// 	&update.Current_value,
-	// 	&update.Name,
-	// 	&update.Description,
-	// 	&update.Notes,
-	// 	&update.Created,
-	// 	&update.Modified_at,
-	// 	&update.Deleted,
-	// 	&update.Timezone,
-	// )
-
-	if err != nil {
-		log.Println(err)
-		fmt.Println(err)
+	if updateErr != nil {
+		log.Println(updateErr)
+		fmt.Println(updateErr)
 		database.CloseDBConnection(db)
 		return timer
 	}
 
-	return timer
+	return update
 }
 
 func Delete(ref string) bool {
