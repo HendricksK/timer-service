@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +35,7 @@ type Timer struct {
 	Timezone       string `json:"timezone,omitempty"`
 }
 
+var tableName string = "timer"
 var env string
 
 var timers = []Timer{
@@ -267,38 +267,53 @@ func Update(c *gin.Context) Timer {
 	updateReflection := reflect.ValueOf(&update).Elem()
 
 	var fieldsBeingUpdated string
-	var valuesBeingUpdated string
-	valuesBeingUpdatedCounter := 0
+	// var valuesBeingUpdated string
+	// valuesBeingUpdatedCounter := 0
 	noUpdatesAllowed := []string{"Id", "Ref"}
 
 	for i := 0; i < updateReflection.NumField(); i++ {
+
 		if updateReflection.Type().Field(i).Name != "" && !slices.Contains(noUpdatesAllowed, updateReflection.Type().Field(i).Name) && updateReflection.Field(i).Interface() != "" {
-			fieldsBeingUpdated += strings.ToLower(updateReflection.Type().Field(i).Name) + ","
-			valuesBeingUpdatedCounter++
-			valuesBeingUpdated += fmt.Sprintf("$%v,", strconv.Itoa(valuesBeingUpdatedCounter))
+			// valuesBeingUpdatedCounter++
+			// https://yourbasic.org/golang/fmt-printf-reference-cheat-sheet/
+			// want to pass the value type, and then parse in the actual value
+			// Will need to look into this to ensure we cannot SQL inject.
+			// What we can do is rather build out an array of no type (hopefully and add values to that, only the values we want to update)
+
+			if strings.Contains(updateReflection.Type().Field(i).Type.String(), "int") { // integer
+				fieldsBeingUpdated += fmt.Sprintf("%v = %v,", strings.ToLower(updateReflection.Type().Field(i).Name), updateReflection.Field(i).Interface())
+			}
+
+			if strings.Contains(updateReflection.Type().Field(i).Type.String(), "string") { // string
+				fieldsBeingUpdated += fmt.Sprintf("%v = '%s',", strings.ToLower(updateReflection.Type().Field(i).Name), updateReflection.Field(i).Interface())
+			}
 		}
 	}
 
 	fieldsBeingUpdated = strings.TrimRight(fieldsBeingUpdated, ",")
-	valuesBeingUpdated = strings.TrimRight(valuesBeingUpdated, ",")
+	// valuesBeingUpdated = strings.TrimRight(valuesBeingUpdated, ",")
 
 	sqlStatement := `
-		INSERT INTO timer (
-			` + fieldsBeingUpdated + `
-		)
-		VALUES (` + valuesBeingUpdated + `)`
+		UPDATE ` + tableName + `
+		SET ` + fieldsBeingUpdated + `
+		WHERE ref = $1`
+
+	// fmt.Println(sqlStatement)
+	// fmt.Println(valuesBeingUpdated)
 
 	// Need to get all non empty fields and then drop them in preparedQuery
 	// https://stackoverflow.com/questions/49965387/use-slice-reflect-type-as-map-key
-	preparedQuery, err := db.Prepare(sqlStatement)
+	updateErr, updateResult := db.Query(sqlStatement, update.Ref)
 
-	defer preparedQuery.Close()
+	fmt.Println(updateErr)
+	fmt.Println(updateResult)
+	// defer preparedQuery.Close()
 
-	errUpdate := preparedQuery.QueryRow(
-		update,
-	)
+	// errUpdate := preparedQuery.QueryRow(
+	// 	update,
+	// )
 
-	fmt.Println(errUpdate)
+	// fmt.Println(errUpdate)
 
 	// Can build all of this into a function in the database package
 
